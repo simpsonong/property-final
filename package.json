@@ -1,0 +1,10 @@
+{
+  "name": "property-final",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:form": "pnpm --filter form dev",
+    "dev:admin": "pnpm --filter admin dev"
+  },
+  "workspaces": ["packages/*"]
+}
