@@ -19,7 +19,8 @@
     "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0",
     "postgres": "^3.4.4",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "axios": "^1.7.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
