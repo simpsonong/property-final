@@ -19,6 +19,11 @@ import { useEffect, useState } from 'react'
       axios.get(`${API}/api/calendar/${y}/${m}`).then(r => { setEvents(r.data); setLoading(false) })
     }, [date])
 
+    function refetchEvents() {
+      const y = date.getFullYear(), m = date.getMonth() + 1
+      axios.get(`${API}/api/calendar/${y}/${m}`).then(r => setEvents(r.data))
+    }
+
     const days = eachDayOfInterval({ start: startOfMonth(date), end: endOfMonth(date) })
     const firstDayOfWeek = getDay(startOfMonth(date))
 
@@ -33,6 +38,22 @@ import { useEffect, useState } from 'react'
 
     function hasEvents(day: Date) {
       return ['viewHouse', 'moveIn', 'payRent'].some(t => getEventsForDay(day, t as EventType).length > 0)
+    }
+
+    async function toggleCheck(viewingId: string, currentChecked: boolean) {
+      const newChecked = !currentChecked
+      // Optimistic update in events state
+      const updater = (arr: any[]) => arr.map(e => e.viewingId === viewingId ? { ...e, taskChecked: newChecked } : e)
+      setEvents((prev: any) => ({
+        viewHouse: updater(prev.viewHouse),
+        moveIn: updater(prev.moveIn),
+        payRent: updater(prev.payRent),
+      }))
+      try {
+        await axios.patch(`${API}/api/leads/viewings/${viewingId}`, { taskChecked: newChecked })
+      } catch {
+        refetchEvents()
+      }
     }
 
     const selectedEvents = activeDay && activeType ? getEventsForDay(new Date(activeDay), activeType) : []
@@ -73,7 +94,7 @@ import { useEffect, useState } from 'react'
                         const cnt = getEventsForDay(day, type).length
                         if (!cnt) return null
                         const colors = { viewHouse: 'bg-yellow-100 text-yellow-700', moveIn: 'bg-green-100 text-green-700', payRent: 'bg-purple-100 text-purple-700' }
-                        const labels = { viewHouse: '👁 View', moveIn: '📦 Move In', payRent: '💰 Rent' }
+                        const labels = { viewHouse: 'View', moveIn: 'Move In', payRent: 'Rent' }
                         return (
                           <button key={type} onClick={() => { setActiveDay(key); setActiveType(type) }}
                             className={`text-[10px] rounded px-1 py-0.5 ${colors[type]} text-left leading-tight`}>
@@ -89,12 +110,11 @@ import { useEffect, useState } from 'react'
           </div>
         </div>
 
-        {/* Event detail panel */}
         {activeDay && activeType && (
           <div className="mt-4 bg-white rounded-2xl shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-gray-800">
-                {activeType === 'viewHouse' ? '👁 View House' : activeType === 'moveIn' ? '📦 Move In' : '💰 Pay Rent'} — {format(new Date(activeDay), 'd MMM yyyy')}
+                {activeType === 'viewHouse' ? 'View House' : activeType === 'moveIn' ? 'Move In' : 'Pay Rent'} — {format(new Date(activeDay), 'd MMM yyyy')}
               </h2>
               <button onClick={() => { setActiveDay(null); setActiveType(null) }} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
@@ -103,8 +123,8 @@ import { useEffect, useState } from 'react'
             ) : (
               <div className="space-y-2">
                 {selectedEvents.map((e: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-gray-50">
-                    <div>
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 gap-3">
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800">{e.leadName}</p>
                       <p className="text-xs text-gray-400">{e.roomAddress}</p>
                       {activeType === 'moveIn' && e.status && (
@@ -113,12 +133,27 @@ import { useEffect, useState } from 'react'
                         </span>
                       )}
                     </div>
-                    {e.waLink && (
-                      <a href={e.waLink} target="_blank" rel="noopener noreferrer"
-                        className="text-sm bg-green-50 text-green-600 hover:bg-green-100 px-3 py-1.5 rounded-lg transition">
-                        WhatsApp
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {e.waLink && (
+                        <a href={e.waLink} target="_blank" rel="noopener noreferrer"
+                          className="text-sm bg-green-50 text-green-600 hover:bg-green-100 px-3 py-1.5 rounded-lg transition">
+                          WhatsApp
+                        </a>
+                      )}
+                      {e.viewingId && (
+                        <button
+                          onClick={() => toggleCheck(e.viewingId, e.taskChecked ?? false)}
+                          className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                            e.taskChecked
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'border-gray-300 hover:border-green-400'
+                          }`}
+                          title={e.taskChecked ? 'Mark as undone' : 'Mark as done'}
+                        >
+                          {e.taskChecked && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
