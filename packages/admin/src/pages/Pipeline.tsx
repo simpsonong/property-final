@@ -46,18 +46,37 @@ import { useEffect, useState } from 'react'
       })
     }
 
+    async function toggleCheck(viewingId: string, currentChecked: boolean) {
+      const newChecked = !currentChecked
+      setLeads(prev => prev.map(lead => ({
+        ...lead,
+        viewings: lead.viewings?.map((v: any) =>
+          v.id === viewingId ? { ...v, taskChecked: newChecked } : v
+        )
+      })))
+      try {
+        await axios.patch(`${API}/api/leads/viewings/${viewingId}`, { taskChecked: newChecked })
+      } catch {
+        setLeads(prev => prev.map(lead => ({
+          ...lead,
+          viewings: lead.viewings?.map((v: any) =>
+            v.id === viewingId ? { ...v, taskChecked: currentChecked } : v
+          )
+        })))
+      }
+    }
+
     if (loading) return <div className="text-gray-400 text-sm py-8 text-center">Loading...</div>
 
     return (
       <div>
         <h1 className="text-xl font-bold text-gray-800 mb-4">Pipeline</h1>
         {leads.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">No leads yet. Share a room form link to get started.</div>
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">No leads yet.</div>
         )}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-50">
           {leads.map(lead => (
             <div key={lead.id}>
-              {/* Main lead row */}
               <div className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer" onClick={() => toggle(lead.id)}>
                 <button className="text-gray-400 mr-3 text-xs w-4">{expanded.has(lead.id) ? '▼' : '▶'}</button>
                 <div className="flex-1 min-w-0">
@@ -71,7 +90,6 @@ import { useEffect, useState } from 'react'
                 <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{lead.viewings?.length ?? 0} room{lead.viewings?.length !== 1 ? 's' : ''}</span>
               </div>
 
-              {/* Expanded viewings */}
               {expanded.has(lead.id) && lead.viewings?.map((v: any) => (
                 <div key={v.id} className="pl-10 pr-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
@@ -87,6 +105,23 @@ import { useEffect, useState } from 'react'
                     {STATUS_LABELS[v.status] ?? v.status}
                   </span>
                   {v.task && <span className="text-xs text-gray-400 truncate max-w-[140px]">{v.task}</span>}
+                  {v.task && (
+                    <button
+                      onClick={e => { e.stopPropagation(); toggleCheck(v.id, v.taskChecked) }}
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        v.taskChecked
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : 'border-gray-300 hover:border-green-400'
+                      }`}
+                      title={v.taskChecked ? 'Mark as undone' : 'Mark as done'}
+                    >
+                      {v.taskChecked && (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                        </svg>
+                      )}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
