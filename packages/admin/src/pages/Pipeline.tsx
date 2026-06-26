@@ -32,10 +32,19 @@ import { useEffect, useState } from 'react'
     const [leads, setLeads] = useState<any[]>([])
     const [expanded, setExpanded] = useState<Set<string>>(new Set())
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
     const navigate = useNavigate()
 
     useEffect(() => {
-      axios.get(`${API}/api/leads`).then(r => { setLeads(r.data); setLoading(false) })
+      axios.get(`${API}/api/leads`)
+        .then(r => {
+          setLeads(Array.isArray(r.data) ? r.data : [])
+          setLoading(false)
+        })
+        .catch(() => {
+          setError('Failed to load leads. Please refresh.')
+          setLoading(false)
+        })
     }, [])
 
     function toggle(id: string) {
@@ -67,6 +76,7 @@ import { useEffect, useState } from 'react'
     }
 
     if (loading) return <div className="text-gray-400 text-sm py-8 text-center">Loading...</div>
+    if (error) return <div className="text-red-500 text-sm py-8 text-center">{error}</div>
 
     return (
       <div>
@@ -90,8 +100,8 @@ import { useEffect, useState } from 'react'
                 <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{lead.viewings?.length ?? 0} room{lead.viewings?.length !== 1 ? 's' : ''}</span>
               </div>
 
-              {expanded.has(lead.id) && lead.viewings?.map((v: any) => (
-                <div key={v.id} className="pl-10 pr-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
+              {expanded.has(lead.id) && (lead.viewings ?? []).map((v: any) => (
+                <div key={v.id ?? Math.random()} className="pl-10 pr-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     {v.waLink ? (
                       <a href={v.waLink} target="_blank" rel="noopener noreferrer"
@@ -104,10 +114,10 @@ import { useEffect, useState } from 'react'
                   <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[v.status] ?? 'bg-gray-100 text-gray-500'}`}>
                     {STATUS_LABELS[v.status] ?? v.status}
                   </span>
-                  {v.task && <span className="text-xs text-gray-400 truncate max-w-[140px]">{v.task}</span>}
+                  {v.task && <span className="text-xs text-gray-400 truncate max-w-[140px]">{String(v.task)}</span>}
                   {v.task && (
                     <button
-                      onClick={e => { e.stopPropagation(); toggleCheck(v.id, v.taskChecked) }}
+                      onClick={e => { e.stopPropagation(); toggleCheck(v.id, !!v.taskChecked) }}
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                         v.taskChecked
                           ? 'bg-green-500 border-green-500 text-white'
