@@ -9,7 +9,7 @@ import { pgTable, text, timestamp, integer, pgEnum, boolean } from 'drizzle-orm/
   ])
   export const rentPaymentStatusEnum = pgEnum('rent_payment_status', ['pending', 'paid'])
 
-  export const rooms = pgTable('rooms', {
+  export const rooms = pgTable('property_rooms', {
     id: text('id').primaryKey().$defaultFn(() => createId()),
     address: text('address').notNull(),
     photoUrl: text('photo_url'),
@@ -19,7 +19,7 @@ import { pgTable, text, timestamp, integer, pgEnum, boolean } from 'drizzle-orm/
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   })
 
-  export const leads = pgTable('leads', {
+  export const leads = pgTable('property_leads', {
     id: text('id').primaryKey().$defaultFn(() => createId()),
     name: text('name').notNull(),
     age: text('age'),
@@ -37,7 +37,7 @@ import { pgTable, text, timestamp, integer, pgEnum, boolean } from 'drizzle-orm/
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   })
 
-  export const viewings = pgTable('viewings', {
+  export const viewings = pgTable('property_viewings', {
     id: text('id').primaryKey().$defaultFn(() => createId()),
     leadId: text('lead_id').notNull().references(() => leads.id),
     roomId: text('room_id').notNull().references(() => rooms.id),
@@ -54,7 +54,7 @@ import { pgTable, text, timestamp, integer, pgEnum, boolean } from 'drizzle-orm/
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   })
 
-  export const rentPayments = pgTable('rent_payments', {
+  export const rentPayments = pgTable('property_rent_payments', {
     id: text('id').primaryKey().$defaultFn(() => createId()),
     viewingId: text('viewing_id').notNull().references(() => viewings.id),
     leadId: text('lead_id').notNull().references(() => leads.id),
